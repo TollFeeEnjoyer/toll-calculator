@@ -11,7 +11,7 @@ public static class TollFeeCalculatorFactory
     {
         return taxRule switch
         {
-            GothenburgTaxRule => new GothenburgTollFeeCalculator(taxRule as GothenburgTaxRule),
+            { City: "Gothenburg" } => new GothenburgTollFeeCalculator(taxRule),
             _ => throw new ArgumentException("Unsupported tax rule")
         };
     }

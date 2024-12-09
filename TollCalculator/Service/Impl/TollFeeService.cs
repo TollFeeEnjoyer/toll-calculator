@@ -1,3 +1,5 @@
+using System.Reflection;
+using System.Text.Json.Serialization;
 using TollCalculator.Data.Interface;
 using TollCalculator.Domain;
 using TollCalculator.Domain.Factory;
@@ -15,14 +17,15 @@ public class TollFeeService : ITollFeeService
         _customDatabaseClient = customDatabaseClient;
     }
 
-    public async Task<int> GetDailyTollFee(Vehicle vehicle, List<DateTime> dates)
+    public async Task<int> GetDailyTollFee(Vehicle vehicle, List<DateTime> dates, string city)
     {
-        var taxRule = await _customDatabaseClient.ReadOne<GothenburgTaxRule>(
-            x => x.City == "Gothenburg",
-            x => x.MultiPassageRule,
+        var taxRule = await _customDatabaseClient.ReadOne<TollFeeTaxRule>(
+            x => x.City == city,
             x => x.TaxRates,
+            x => x.MultiPassageRule,
             x => x.TaxExemptVehicles,
-            x => x.TollFreeDates);
+            x => x.TollFreeDates
+        );
         if (taxRule == null) throw new Exception("No tax rule found for the city");
         var calculator = TollFeeCalculatorFactory.CreateCalculator(taxRule);
         return calculator.GetDailyTollFee(dates, vehicle);

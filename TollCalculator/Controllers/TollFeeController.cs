@@ -5,7 +5,7 @@ using TollCalculator.Service.Interface;
 namespace TollCalculator.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("tax")]
 public class TollFeeController : ControllerBase
 {
     private readonly ILogger<TollFeeController> _logger;
@@ -17,33 +17,34 @@ public class TollFeeController : ControllerBase
         _tollFeeService = tollFeeService;
     }
 
-    [HttpPost(Name = "CalculateDailyTollFee")]
-    public IActionResult CalculateDailyTollFee([FromBody] List<DateTime> dateTimes, [FromBody] Vehicle vehicle)
+    [HttpPost("/tollFee/{city}")]
+    public async Task<IActionResult> CalculateDailyTollFee([FromBody] DailyTollFeeRequest request, string city)
     {
-        if (dateTimes.Count == 0)
+        if (string.IsNullOrEmpty(city))
+        {
+            return new BadRequestObjectResult(new { message = "No city provided" });
+        }
+
+        if (request.Dates.Count == 0)
         {
             return new BadRequestObjectResult(new { message = "No dates provided" });
         }
 
-        dateTimes.Sort();
-        if (dateTimes.First().Date != dateTimes.Last().Date)
+        request.Dates.Sort();
+        if (request.Dates.First().Date != request.Dates.Last().Date)
         {
             return new BadRequestObjectResult(new { message = "The dates must be the same day" });
         }
 
-        bool isValidVehicleType = Enum.TryParse<VehicleTypes>(vehicle.Type, out var _);
+        bool isValidVehicleType = Enum.TryParse<VehicleTypes>(request.Vehicle.Type, out _);
         if (!isValidVehicleType)
         {
             return new BadRequestObjectResult(new { message = "No vehicle provided" });
         }
 
-        return new OkObjectResult(new { dailyTollFee = _tollFeeService.GetDailyTollFee(vehicle, dateTimes) });
+        return new OkObjectResult(
+            new { dailyTollFee = await _tollFeeService.GetDailyTollFee(request.Vehicle, request.Dates, city) });
     }
-}
-
-public class DailyTollFeeResponse
-{
-    public int TollFee { get; set; }
 }
 
 public class DailyTollFeeRequest

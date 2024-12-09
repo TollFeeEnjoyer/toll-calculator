@@ -1,14 +1,15 @@
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
+using TollCalculator.Data.DatabaseContext;
 using TollCalculator.Data.Interface;
 
 namespace TollCalculator.Data.Impl;
 
 public class CustomDatabaseClient : ICustomDatabaseClient
 {
-    private readonly DbContext _context;
+    private readonly AppDbContext _context;
 
-    public CustomDatabaseClient(DbContext context)
+    public CustomDatabaseClient(AppDbContext context)
     {
         _context = context;
     }

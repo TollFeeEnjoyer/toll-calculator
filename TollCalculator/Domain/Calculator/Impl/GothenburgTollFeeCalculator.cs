@@ -1,13 +1,14 @@
 using TollCalculator.Domain.Calculator.Interface;
 using TollCalculator.Domain.TaxRule.Impl;
+using TollCalculator.Domain.TaxRule.Interface;
 
 namespace TollCalculator.Domain.Calculator.Impl;
 
 public class GothenburgTollFeeCalculator : ITollFeeCalculator
 {
-    private readonly GothenburgTaxRule _taxRule;
+    private readonly ITollFeeTaxRule _taxRule;
 
-    public GothenburgTollFeeCalculator(GothenburgTaxRule taxRule)
+    public GothenburgTollFeeCalculator(ITollFeeTaxRule taxRule)
     {
         _taxRule = taxRule;
     }
@@ -20,7 +21,7 @@ public class GothenburgTollFeeCalculator : ITollFeeCalculator
         var totalDailyFee = 0;
         foreach (var date in dates)
         {
-            if ((TimeOnly.FromDateTime(date) - TimeOnly.FromDateTime(intervalStart)).Minutes <
+            if ((TimeOnly.FromDateTime(date) - TimeOnly.FromDateTime(intervalStart)).TotalMinutes <
                 _taxRule.MultiPassageRule.FeeWindowDurationInMinutes)
             {
                 highestIntervalFee = Math.Max(highestIntervalFee, GetTollFee(date, vehicle));
@@ -32,13 +33,13 @@ public class GothenburgTollFeeCalculator : ITollFeeCalculator
                 intervalStart = date;
             }
 
-            if (_taxRule.MaxDailyRate < totalDailyFee)
+            if (totalDailyFee > _taxRule.MaxDailyRate)
             {
                 return _taxRule.MaxDailyRate;
             }
         }
 
-        return totalDailyFee;
+        return Math.Min(totalDailyFee + highestIntervalFee, _taxRule.MaxDailyRate);
     }
 
     public int GetTollFee(DateTime date, Vehicle vehicle)
@@ -53,11 +54,13 @@ public class GothenburgTollFeeCalculator : ITollFeeCalculator
 
     private bool IsTollFreeVehicle(Vehicle vehicle)
     {
-        return _taxRule.TaxExemptVehicles.Contains(vehicle.Type);
+        return _taxRule.TaxExemptVehicles.Exists(x => x.VehicleType == vehicle.Type);
     }
 
     private bool IsTollFreeDate(DateTime date)
     {
-        return _taxRule.TollFreeDates.Contains(date);
+        return _taxRule.TollFreeDates.Exists(x => x.Date == DateOnly.FromDateTime(date.Date)) ||
+               _taxRule.TollFreeWeekends &&
+               (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday);
     }
 }

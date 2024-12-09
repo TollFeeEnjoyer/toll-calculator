@@ -4,5 +4,5 @@ namespace TollCalculator.Service.Interface;
 
 public interface ITollFeeService
 {
-    Task<int> GetDailyTollFee(Vehicle vehicle, List<DateTime> date);
+    Task<int> GetDailyTollFee(Vehicle vehicle, List<DateTime> date, string city);
 }
